@@ -23,6 +23,12 @@ namespace _21._06_TCP_UDP_sockets
         private static readonly Dictionary<string, ClientInfo> clients = new Dictionary<string, ClientInfo>();
         private static int currentConnections = 0;
 
+        private static readonly Dictionary<string, string> userCredentials = new Dictionary<string, string>
+        {
+            { "user1", "password1" },
+            { "user2", "password2" }
+        };
+
         public static void Main()
         {
             TcpListener listener = new TcpListener(IPAddress.Any, 5000);
@@ -50,6 +56,19 @@ namespace _21._06_TCP_UDP_sockets
                     client.Close();
                     return;
                 }
+            }
+
+            NetworkStream stream = client.GetStream();
+
+            if (!AuthenticateClient(stream))
+            {
+                log.Add($"Authentication failed for {clientInfo} at {DateTime.Now}");
+                client.Close();
+                return;
+            }
+
+            lock (clients)
+            {
                 currentConnections++;
             }
 
@@ -60,7 +79,6 @@ namespace _21._06_TCP_UDP_sockets
                 clients[clientInfo] = new ClientInfo { LastRequestTime = DateTime.MinValue, RequestCount = 0 };
             }
 
-            NetworkStream stream = client.GetStream();
             byte[] buffer = new byte[1024];
             int bytesRead;
 
@@ -103,6 +121,31 @@ namespace _21._06_TCP_UDP_sockets
                 }
                 log.Add($"Disconnected: {clientInfo} at {DateTime.Now}");
                 client.Close();
+            }
+        }
+
+        private static bool AuthenticateClient(NetworkStream stream)
+        {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+
+            bytesRead = stream.Read(buffer, 0, buffer.Length);
+            string username = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
+
+            bytesRead = stream.Read(buffer, 0, buffer.Length);
+            string password = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
+
+            if (userCredentials.TryGetValue(username, out string storedPassword) && storedPassword == password)
+            {
+                byte[] response = Encoding.UTF8.GetBytes("Authentication successful");
+                stream.Write(response, 0, response.Length);
+                return true;
+            }
+            else
+            {
+                byte[] response = Encoding.UTF8.GetBytes("Authentication failed");
+                stream.Write(response, 0, response.Length);
+                return false;
             }
         }
 
