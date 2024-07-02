@@ -82,7 +82,7 @@ namespace _21._06_TCP_UDP_sockets
 
                     if (DateTime.Now >= clientData.LastRequestTime + cooldownPeriod)
                     {
-                        clientData.RequestCount = 0;
+                        clientData.RequestCount = 0; 
                     }
 
                     clientData.RequestCount++;
