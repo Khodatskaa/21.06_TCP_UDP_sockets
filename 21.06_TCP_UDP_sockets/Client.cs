@@ -28,6 +28,12 @@ namespace _21._06_TCP_UDP_sockets
                 int bytesRead = stream.Read(responseBuffer, 0, responseBuffer.Length);
                 string response = Encoding.UTF8.GetString(responseBuffer, 0, bytesRead);
 
+                if (response.Contains("Request limit reached"))
+                {
+                    Console.WriteLine(response);
+                    break;
+                }
+
                 Console.WriteLine($"Exchange Rate: {response}");
             }
 
